@@ -10,7 +10,7 @@ set -euo pipefail
 
 # Check for root
 if [ "$EUID" -ne 0 ]
-  then echo "Please run as root"
+  then echo "snap-remove-disabled.sh: Please run as root"
   exit
 fi
 

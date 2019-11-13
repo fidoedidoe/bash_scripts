@@ -9,7 +9,7 @@ set -euo pipefail
 
 # Check for root
 if [ "$EUID" -ne 0 ]
-  then echo "Please run as root"
+  then echo "dkms-rebuild-modules.sh: Please run as root"
   exit
 fi
 

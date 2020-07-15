@@ -2,7 +2,8 @@
 # Runs: 
 #  apt update
 #  apt auto remove/clean
-#  removes disabled snap apps
+#  updates snap apps
+#  updates flatpak apps
 
 # instruct bash to: 
 #  -e "fail on non zero exit status"
@@ -23,19 +24,19 @@ if [ "$EUID" -ne 0 ]
 fi
 
 echo "==="
-echo "apt: updating repositories..."
+echo "apt: updating $UBUNTU_VERSION repositories..."
 echo "==="
 apt update
 echo "==="
-echo "apt: checking for updates..."
+echo "apt: checking for $UBUNTU_VERSION updates..."
 echo "==="
 apt dist-upgrade
 echo "==="
-echo "apt: cleaning up..."
+echo "apt: remove obsolete dependancies for $UBUNTU_VERSION..."
 echo "==="
 apt autoremove && apt autoclean
 echo "==="
-echo "apt: complete!"
+echo "apt: $UBUNTU_VERSION updates complete!"
 echo "==="
 echo ""
 echo ""

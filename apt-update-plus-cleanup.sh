@@ -12,7 +12,8 @@
 set -euo pipefail
 
 # variables: 
-FILE=/usr/bin/snap
+SNAP=/usr/bin/snap
+FLATPAK=/usr/bin/flatpak
 UBUNTU_VERSION=$(lsb_release -ds)
 
 # Check for root
@@ -39,8 +40,8 @@ echo "==="
 echo ""
 echo ""
 
-#is snapd/snapd installed?
-if [ -f "$FILE" ]; then
+#is snap installed?
+if [ -f "$SNAP" ]; then
    echo "=========="
    echo "snap store: checking for updates..."
    echo "=========="
@@ -55,6 +56,28 @@ if [ -f "$FILE" ]; then
        while read snapname revision; do
           echo -n "removing $snapname: rev - $revision....." && snap remove "$snapname" --revision="$revision"
        done
+else
+   echo "====="
+   echo "snapd: not installed, skipping..."
+   echo "====="
+fi
+
+#is flatpak installed?
+if [ -f "$FLATPAK" ]; then
+   echo "======="
+   echo "flatpak: checking for updates..."
+   echo "======="
+   flatpak update
+   echo "======="
+   echo "flatpak: listing apps..."
+   echo "======="
+   flatpak list
+   echo ""
+   echo ""
+else
+   echo "====="
+   echo "flatpak: not installed, skipping..."
+   echo "====="
 fi
 
 echo ""

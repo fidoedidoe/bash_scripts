@@ -69,7 +69,7 @@ if [ -f "$SNAP" ]; then
    echo ""
    LANG=en_US.UTF-8 snap list --all | awk '/disabled/{print $1, $3}' |
        while read snapname revision; do
-          echoMsg "removing $snapname: rev - $revision....." && snap remove "$snapname" --revision="$revision" -n
+          echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
        done
    echoMsg "=========="
    echoMsg "snap store: finished!"
@@ -80,6 +80,8 @@ else
    echoMsg "snapd: is not installed, skipping..."
    echoMsg "====="
 fi
+echo ""
+echo ""
 
 #is flatpak installed?
 if [ -f "$FLATPAK" ]; then
@@ -96,9 +98,9 @@ if [ -f "$FLATPAK" ]; then
    echoMsg "flatpak: finished!"
    echoMsg "======="
 else
-   echoMsg "====="
+   echoMsg "======="
    echoMsg "flatpak: is not installed, skipping..."
-   echoMsg "====="
+   echoMsg "======="
 fi
 
 echo ""
@@ -106,5 +108,5 @@ echo ""
 
 echoMsg "================="
 echoMsg "Process complete! $UBUNTU_VERSION is now up to date! Press [Enter] to close this window $SUDO_USER."
-echoMsg "================="
+echoMsg "=================" -n
 read -p ""

@@ -55,7 +55,7 @@ apt update
 echoMsg "==="
 echoMsg "apt: checking for updates in refreshed repositories..."
 echoMsg "==="
-apt dist-upgrade
+apt upgrade
 echoMsg "==="
 echoMsg "apt: removing obsolescence..."
 echoMsg "==="

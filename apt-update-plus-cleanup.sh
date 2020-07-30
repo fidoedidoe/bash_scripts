@@ -30,14 +30,20 @@ echoMsg() {
 }
 
 # Check for root
-if [ "$EUID" -ne 0 ]
-  then echoMsg "apt-update-plus-cleanup.sh: Please run as root"
-  exit
+if [ "$EUID" -ne 0 ]; then 
+   echoMsg "=========================="
+   echoMsg "apt-update-plus-cleanup.sh: Please run as root"
+   echoMsg "=========================="
+   exit
 fi
 
+echoMsg "======"
+echoMsg "Script: starting..."
+echoMsg "======"
+echoMsg ""
+
 echoMsg "==="
-echoMsg "apt: starting..."
-echoMsg "apt: updating $UBUNTU_VERSION repositories..."
+echoMsg "apt: refreshing $UBUNTU_VERSION repositories..."
 echoMsg "==="
 apt update
 echoMsg "==="
@@ -57,7 +63,6 @@ echo ""
 #is snap installed?
 if [ -f "$SNAP" ]; then
    echoMsg "=========="
-   echoMsg "snap store: starting"
    echoMsg "snap store: checking for updates..."
    echoMsg "=========="
    snap refresh
@@ -86,7 +91,6 @@ echo ""
 #is flatpak installed?
 if [ -f "$FLATPAK" ]; then
    echoMsg "======="
-   echoMsg "flatpak: starting..."
    echoMsg "flatpak: checking for updates..."
    echoMsg "======="
    flatpak update
@@ -106,7 +110,7 @@ fi
 echo ""
 echo ""
 
-echoMsg "================="
-echoMsg "Process complete! $UBUNTU_VERSION is now up to date! Press [Enter] to close this window $SUDO_USER."
-echoMsg "=================" -n
+echoMsg "==============="
+echoMsg "Script complete! $UBUNTU_VERSION is now up to date :) Press [Enter] to close this window $SUDO_USER."
+echoMsg "===============" -n
 read -p ""

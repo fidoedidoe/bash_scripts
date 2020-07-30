@@ -3,6 +3,13 @@
 # Written by FidoeDidoe, 1st July 2020
 # For updates, refer to: https://github.com/fidoedidoe/bash_scripts/blob/master/apt-update-plus-cleanup.sh
 
+# Usage: 
+# sudo ./apt-update-plus-cleanup.sh <param1> [optional]
+#   param1 (optional): Possible values [Y|y|N|n]
+#                      Default: N
+#                      Y|y: Instructs script to run "apt dist-upgrade"
+#                      N|n (or not present): Instructs script to run "apt upgrade" 
+
 # Runs: 
 # ----
 #  apt update
@@ -22,6 +29,7 @@ set -euo pipefail
 SNAP=/usr/bin/snap
 FLATPAK=/usr/bin/flatpak
 UBUNTU_VERSION=$(lsb_release -ds)
+DIST_UPGRADE="N"
 
 # functions
 echoMsg() {
@@ -36,11 +44,24 @@ echoMsg() {
 }
 
 # Check for root
-if [ "$EUID" -ne 0 ]; then 
+if [[ "$EUID" -ne 0 ]]; then 
    echoMsg "=========================="
    echoMsg "apt-update-plus-cleanup.sh: Please run as root"
    echoMsg "=========================="
    exit
+fi
+
+# check command line arguments
+if [[ -n "${1-N}" ]]; then
+   DIST_UPGRADE="${1-N}"
+   if [[ "$DIST_UPGRADE" =~ ^(N|n|Y|y)$ ]]; then
+      echo ""
+   else
+      echoMsg "========"
+      echoMsg "<param1> $DIST_UPGRADE is not in the expacted format [Y|N] cannot coniinue"
+      echoMsg "========"
+      exit
+   fi 
 fi
 
 echoMsg "======"
@@ -53,9 +74,14 @@ echoMsg "apt: refreshing $UBUNTU_VERSION repositories..."
 echoMsg "==="
 apt update
 echoMsg "==="
-echoMsg "apt: checking for updates in refreshed repositories..."
-echoMsg "==="
-apt upgrade
+case "$DIST_UPGRADE" in
+     "Y"|"y" ) echoMsg "apt: checking for updates in refreshed repositories using: 'apt dist-upgrade'"
+               echoMsg "==="
+               apt dist-upgrade;;
+     "N"|"n" ) echoMsg "apt: checking for updates in refreshed repositories using: 'apt upgrade'"
+               echoMsg "==="
+               apt upgrade;;
+esac
 echoMsg "==="
 echoMsg "apt: removing obsolescence..."
 echoMsg "==="

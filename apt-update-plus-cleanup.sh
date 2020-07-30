@@ -1,11 +1,17 @@
 #!/bin/bash
+
+# Written by FidoeDidoe, 1st July 2020
+# For updates, refer to: https://github.com/fidoedidoe/bash_scripts/blob/master/apt-update-plus-cleanup.sh
+
 # Runs: 
+# ----
 #  apt update
 #  apt auto remove/clean
 #  updates snap apps
 #  updates flatpak apps
 
-# instruct bash to: 
+# instruct bash to:
+# ----------------
 #  -e "fail on non zero exit status"
 #  -u "fail on non-defined variables"
 #  -o pipefail "prevent errors in pipeline from being masked"

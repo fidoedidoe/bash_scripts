@@ -35,10 +35,14 @@ PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is runnin
 # functions
 echoMsg() {
 
+  # shellcheck disable=SC2034
   YELLOW='\033[1;33m'
+  # shellcheck disable=SC2034
   NC='\033[0m' # No Color
  
+  # shellcheck disable=SC2034
   MSG=${1:-}
+  # shellcheck disable=SC2034
   ARG1=${2:-}
 
   eval 'echo -e $ARG1 $YELLOW$MSG$NC'

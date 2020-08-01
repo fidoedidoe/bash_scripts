@@ -30,6 +30,7 @@ SNAP=/usr/bin/snap
 FLATPAK=/usr/bin/flatpak
 UBUNTU_VERSION=$(lsb_release -ds)
 DIST_UPGRADE="N"
+PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
 
 # functions
 echoMsg() {
@@ -93,29 +94,35 @@ echo ""
 echo ""
 
 #is snap installed?
-if [ -f "$SNAP" ]; then
-   echoMsg "=========="
-   echoMsg "snap store: checking for updates..."
-   echoMsg "=========="
-   snap refresh
-   echoMsg "=========="
-   echoMsg "snap store: listing apps..."
-   echoMsg "=========="
-   snap list --all
-   echo ""
-   echo ""
-   LANG=en_US.UTF-8 snap list --all | awk '/disabled/{print $1, $3}' |
-       while read snapname revision; do
-          echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
-       done
-   echoMsg "=========="
-   echoMsg "snap store: finished!"
-   echoMsg "=========="
 
+if [[ "$PID1_PROC" == "systemd" ]]; then
+   if [ -f "$SNAP" ]; then
+      echoMsg "=========="
+      echoMsg "snap store: checking for updates..."
+      echoMsg "=========="
+      snap refresh
+      echoMsg "=========="
+      echoMsg "snap store: listing apps..."
+      echoMsg "=========="
+      snap list --all
+      echo ""
+      echo ""
+      LANG=en_US.UTF-8 snap list --all | awk '/disabled/{print $1, $3}' |
+          while read snapname revision; do
+             echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
+          done
+      echoMsg "=========="
+      echoMsg "snap store: finished!"
+      echoMsg "=========="
+   else
+      echoMsg "====="
+      echoMsg "snapd: is not installed, skipping..."
+      echoMsg "====="
+   fi
 else
-   echoMsg "====="
-   echoMsg "snapd: is not installed, skipping..."
-   echoMsg "====="
+      echoMsg "======="
+      echoMsg "systemd: is not running (you're using 'init'), snapd wont be running normally, skipping..."
+      echoMsg "======="
 fi
 echo ""
 echo ""
@@ -143,6 +150,6 @@ echo ""
 echo ""
 
 echoMsg "==============="
-echoMsg "Script complete! $UBUNTU_VERSION is now up to date :) Press [Enter] to close this window $SUDO_USER."
+echoMsg "Script complete! $UBUNTU_VERSION is now up to date :) Press anykey to close this script $SUDO_USER."
 echoMsg "===============" -n
-read -p ""
+read -n 1 -s -r -p ""

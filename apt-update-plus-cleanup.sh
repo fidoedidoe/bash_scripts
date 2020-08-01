@@ -37,11 +37,13 @@ echoMsg() {
 
   # shellcheck disable=SC2034
   YELLOW='\033[1;33m'
+
   # shellcheck disable=SC2034
   NC='\033[0m' # No Color
  
   # shellcheck disable=SC2034
   MSG=${1:-}
+
   # shellcheck disable=SC2034
   ARG1=${2:-}
 
@@ -112,7 +114,7 @@ if [[ "$PID1_PROC" == "systemd" ]]; then
       echo ""
       echo ""
       LANG=en_US.UTF-8 snap list --all | awk '/disabled/{print $1, $3}' |
-          while read snapname revision; do
+          while read -r snapname revision; do
              echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
           done
       echoMsg "=========="

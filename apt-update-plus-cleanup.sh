@@ -32,7 +32,7 @@ UBUNTU_VERSION=$(lsb_release -ds)
 DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
 
-# functions
+# function(s)
 echoMsg() {
 
   # shellcheck disable=SC2034
@@ -47,14 +47,12 @@ echoMsg() {
   # shellcheck disable=SC2034
   ARG1=${2:-}
 
-  eval 'echo -e $ARG1 $YELLOW$MSG$NC'
+  echo -e ${ARG1} "${YELLOW}${MSG}${NC}"
 }
 
 # Check for root
 if [[ "$EUID" -ne 0 ]]; then 
-   echoMsg "=========================="
-   echoMsg "apt-update-plus-cleanup.sh: Please run as root"
-   echoMsg "=========================="
+   echoMsg "==========================\napt-update-plus-cleanup.sh: Please run as root\n=========================="
    exit
 fi
 
@@ -64,98 +62,65 @@ if [[ -n "${1-N}" ]]; then
    if [[ "$DIST_UPGRADE" =~ ^(N|n|Y|y)$ ]]; then
       echo ""
    else
-      echoMsg "========"
-      echoMsg "<param1> $DIST_UPGRADE is not in the expacted format [Y|N] cannot coniinue"
-      echoMsg "========"
+      echoMsg "========\n<param1>: '$DIST_UPGRADE' is not in the expacted format [Y|N] cannot coniinue\n========"
       exit
    fi 
 fi
 
-echoMsg "======"
-echoMsg "Script: starting..."
-echoMsg "======"
-echoMsg ""
+echoMsg "======\nScript: starting...\n======\n"
 
-echoMsg "==="
-echoMsg "apt: refreshing $UBUNTU_VERSION repositories..."
-echoMsg "==="
+
+#Update apt repos and run update / dist-update
+##############################################
+
+echoMsg "===\napt: refreshing $UBUNTU_VERSION repositories...\n==="
 apt update
-echoMsg "==="
 case "$DIST_UPGRADE" in
-     "Y"|"y" ) echoMsg "apt: checking for updates in refreshed repositories using: 'apt dist-upgrade'"
-               echoMsg "==="
+     "Y"|"y" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt dist-upgrade'\n==="
                apt dist-upgrade;;
-     "N"|"n" ) echoMsg "apt: checking for updates in refreshed repositories using: 'apt upgrade'"
-               echoMsg "==="
+     "N"|"n" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt upgrade'\n==="
                apt upgrade;;
 esac
-echoMsg "==="
-echoMsg "apt: removing obsolescence..."
-echoMsg "==="
+echoMsg "===\napt: removing obsolescence...\n==="
 apt autoremove && apt autoclean
-echoMsg "==="
-echoMsg "apt: finished!"
-echoMsg "==="
-echo ""
-echo ""
+echoMsg "===\napt: finished!\n===\n\n"
 
-#is snap installed?
+#Check for snapd/snap and update snap apps
+#=========================================
 
 if [[ "$PID1_PROC" == "systemd" ]]; then
    if [ -f "$SNAP" ]; then
-      echoMsg "=========="
-      echoMsg "snap store: checking for updates..."
-      echoMsg "=========="
+      echoMsg "==========\nsnap store: checking for updates...\n=========="
       snap refresh
-      echoMsg "=========="
-      echoMsg "snap store: listing apps..."
-      echoMsg "=========="
+      echoMsg "==========\nsnap store: listing apps...\n=========="
       snap list --all
-      echo ""
-      echo ""
+      echoMsg "\n\n"
       LANG=en_US.UTF-8 snap list --all | awk '/disabled/{print $1, $3}' |
           while read -r snapname revision; do
              echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
           done
-      echoMsg "=========="
-      echoMsg "snap store: finished!"
-      echoMsg "=========="
+      echoMsg "==========\nsnap store: finished!\n=========="
    else
-      echoMsg "====="
-      echoMsg "snapd: is not installed, skipping..."
-      echoMsg "====="
+      echoMsg "=====\nsnapd: is not installed, skipping...\n====="
    fi
 else
-      echoMsg "======="
-      echoMsg "systemd: is not running (you're using 'init'), snapd wont be running normally, skipping..."
-      echoMsg "======="
+      echoMsg "=======\nsystemd: is not running (you're using 'init'), snapd wont be running normally, skipping...\n======="
 fi
-echo ""
-echo ""
+echoMsg "\n\n"
 
-#is flatpak installed?
+#Check for flatpak and update flatpack apps
+###########################################
+
 if [ -f "$FLATPAK" ]; then
-   echoMsg "======="
-   echoMsg "flatpak: checking for updates..."
-   echoMsg "======="
+   echoMsg "=======\nflatpak: checking for updates...\n======="
    flatpak update
-   echoMsg "======="
-   echoMsg "flatpak: listing apps..."
-   echoMsg "======="
+   echoMsg "=======\nflatpak: listing apps...\n======="
    flatpak list
-   echoMsg "======="
-   echoMsg "flatpak: finished!"
-   echoMsg "======="
+   echoMsg "=======\nflatpak: finished!\n======="
 else
-   echoMsg "======="
-   echoMsg "flatpak: is not installed, skipping..."
-   echoMsg "======="
+   echoMsg "=======\nflatpak: is not installed, skipping...\n======="
 fi
+echoMsg "\n\n"
 
-echo ""
-echo ""
-
-echoMsg "==============="
-echoMsg "Script complete! $UBUNTU_VERSION is now up to date :) Press anykey to close this script $SUDO_USER."
-echoMsg "===============" -n
+echoMsg "===============\nScript complete! $UBUNTU_VERSION is now up to date :) Press any key to close this script $SUDO_USER.\n===============\n" -n
 read -n 1 -s -r -p ""

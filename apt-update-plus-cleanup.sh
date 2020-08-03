@@ -47,6 +47,7 @@ echoMsg() {
   # shellcheck disable=SC2034
   ARG1=${2:-}
 
+  # shellcheck disable=SC2086
   echo -e ${ARG1} "${YELLOW}${MSG}${NC}"
 }
 
@@ -70,8 +71,8 @@ fi
 echoMsg "======\nScript: starting...\n======\n"
 
 
-#Update apt repos and run update / dist-update
-##############################################
+# Update apt repos and run update / dist-update
+###############################################
 
 echoMsg "===\napt: refreshing $UBUNTU_VERSION repositories...\n==="
 apt update
@@ -85,20 +86,34 @@ echoMsg "===\napt: removing obsolescence...\n==="
 apt autoremove && apt autoclean
 echoMsg "===\napt: finished!\n===\n\n"
 
-#Check for snapd/snap and update snap apps
-#=========================================
+# Check for snapd/snap and update snap apps
+#==#=======================================
 
 if [[ "$PID1_PROC" == "systemd" ]]; then
    if [ -f "$SNAP" ]; then
-      echoMsg "==========\nsnap store: checking for updates...\n=========="
-      snap refresh
-      echoMsg "==========\nsnap store: listing apps...\n=========="
-      snap list --all
-      echoMsg "\n\n"
-      LANG=en_US.UTF-8 snap list --all | awk '/disabled/{print $1, $3}' |
-          while read -r snapname revision; do
-             echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
-          done
+      echoMsg "==========\nsnap store: listing all snap apps...\n=========="
+      snap list --all --color auto
+      echoMsg "\n==========\nsnap store: listing snaps with pending updates...\n=========="
+      SNAP_LIST=$(LANG=en_US.UTF-8 snap refresh --list 2>&1)
+      echo "${SNAP_LIST}"
+      if [[ $SNAP_LIST != "All snaps up to date." ]]; then
+         echoMsg "==========\nsnap store: Update snap apps? [Y/n]...\n==========\n"
+         PROMPT=""
+         read -r -p "" -e -n 1 PROMPT
+         if [ -z "$PROMPT" ]; then
+             PROMPT="Y"
+         fi
+         if [[ $PROMPT =~ ^[Yy]$ ]]; then
+            echoMsg "==========\nsnap store: updatings snaps...\n=========="
+            snap refresh
+            LANG=en_US.UTF-8 snap list --all --color auto | awk '/disabled/{print $1, $3}' |
+               while read -r snapname revision; do
+                  echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
+               done
+         else
+            echoMsg "==========\nsnap store: $SUDO_USER, you entered '$PROMPT', skipping check for snap updates ...\n==========\n\n"
+         fi
+      fi
       echoMsg "==========\nsnap store: finished!\n=========="
    else
       echoMsg "=====\nsnapd: is not installed, skipping...\n====="
@@ -108,7 +123,7 @@ else
 fi
 echoMsg "\n\n"
 
-#Check for flatpak and update flatpack apps
+# Check for flatpak and update flatpak apps
 ###########################################
 
 if [ -f "$FLATPAK" ]; then

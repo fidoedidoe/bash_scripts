@@ -127,10 +127,10 @@ echoMsg "\n\n"
 ###########################################
 
 if [ -f "$FLATPAK" ]; then
-   echoMsg "=======\nflatpak: checking for updates...\n======="
-   flatpak update
    echoMsg "=======\nflatpak: listing apps...\n======="
    flatpak list
+   echoMsg "=======\nflatpak: checking for updates...\n======="
+   flatpak update
    echoMsg "=======\nflatpak: finished!\n======="
 else
    echoMsg "=======\nflatpak: is not installed, skipping...\n======="

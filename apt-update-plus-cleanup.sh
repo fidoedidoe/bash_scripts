@@ -106,14 +106,14 @@ if [[ "$PID1_PROC" == "systemd" ]]; then
          if [[ $PROMPT =~ ^[Yy]$ ]]; then
             echoMsg "==========\nsnap store: updatings snaps...\n=========="
             snap refresh
-            LANG=en_US.UTF-8 snap list --all --color auto | awk '/disabled/{print $1, $3}' |
-               while read -r snapname revision; do
-                  echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
-               done
          else
             echoMsg "==========\nsnap store: $SUDO_USER, you entered '$PROMPT', skipping check for snap updates ...\n==========\n\n"
          fi
       fi
+      LANG=en_US.UTF-8 snap list --all --color auto | awk '/disabled/{print $1, $3}' |
+         while read -r snapname revision; do
+            echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"
+         done
       echoMsg "==========\nsnap store: finished!\n=========="
    else
       echoMsg "=====\nsnapd: is not installed, skipping...\n====="

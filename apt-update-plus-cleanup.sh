@@ -87,7 +87,7 @@ apt autoremove && apt autoclean
 echoMsg "===\napt: finished!\n===\n\n"
 
 # Check for snapd/snap and update snap apps
-#==#=======================================
+###########################################
 
 if [[ "$PID1_PROC" == "systemd" ]]; then
    if [ -f "$SNAP" ]; then

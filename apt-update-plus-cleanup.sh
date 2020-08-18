@@ -5,10 +5,16 @@
 
 # Usage: 
 # sudo ./apt-update-plus-cleanup.sh <param1> [optional]
-#   param1 (optional): Possible values [Y|y|N|n]
+#   param1 (optional): Switch to control whether to run 'apt dist-upgrade' or 'apt upgrade' 
+#                      Possible values [Y|y|N|n]
 #                      Default: N
 #                      Y|y: Instructs script to run "apt dist-upgrade"
-#                      N|n (or not present): Instructs script to run "apt upgrade" 
+#                      N|n: (or not present): Instructs script to run "apt upgrade" 
+#   param2 (optional): Prompt to exit script when complete which is useful when executed via icon from desktop (rather than terminal) 
+#                      Possible values [Y|y|N|n]
+#                      Default: N
+#                      Y|y: Promots to "press any key to exit"
+#                      N|n: Exits script without prompting 
 
 # Runs: 
 # ----
@@ -33,6 +39,7 @@ DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
 
 # function(s)
+#############
 echoMsg() {
 
   # shellcheck disable=SC2034
@@ -52,18 +59,30 @@ echoMsg() {
 }
 
 # Check for root
+################
 if [[ "$EUID" -ne 0 ]]; then 
    echoMsg "==========================\napt-update-plus-cleanup.sh: Please run as root\n=========================="
    exit
 fi
 
-# check command line arguments
+# check command line input arguments
+####################################
 if [[ -n "${1-N}" ]]; then
    DIST_UPGRADE="${1-N}"
    if [[ "$DIST_UPGRADE" =~ ^(N|n|Y|y)$ ]]; then
       echo ""
    else
       echoMsg "========\n<param1>: '$DIST_UPGRADE' is not in the expacted format [Y|N] cannot coniinue\n========"
+      exit
+   fi 
+fi
+
+if [[ -n "${2-Y}" ]]; then
+   EXIT_PROMPT="${2-Y}"
+   if [[ "$EXIT_PROMPT" =~ ^(N|n|Y|y)$ ]]; then
+      echo ""
+   else
+      echoMsg "========\n<param1>: '$EXIT_PROMPT' is not in the expacted format [Y|N] cannot coniinue\n========"
       exit
    fi 
 fi
@@ -137,5 +156,9 @@ else
 fi
 echoMsg "\n\n"
 
-echoMsg "===============\nScript complete! $UBUNTU_VERSION is now up to date :) Press any key to close this script $SUDO_USER.\n===============\n" -n
-read -n 1 -s -r -p ""
+echoMsg "===============\nScript complete! $UBUNTU_VERSION is now up to date :)"
+case "$EXIT_PROMPT" in
+     "Y"|"y" ) echoMsg "Press any key to close this script $SUDO_USER.\n===============\n" -n
+               read -n 1 -s -r -p "";;
+     "N"|"n" ) echoMsg "===============\n";;
+esac

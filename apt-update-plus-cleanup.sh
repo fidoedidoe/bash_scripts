@@ -52,16 +52,35 @@ echoMsg() {
   MSG=${1:-}
 
   # shellcheck disable=SC2034
-  ARG1=${2:-}
+  COLOUR=${2:-}
+
+  case "$COLOUR" in
+     "NOCOLOUR"    ) COLOUR=${NC};;
+       "GREEN"     ) COLOUR='\033[1;32m';;
+         "RED"     ) COLOUR='\033[1;33m';;
+         "YELLOW"|*) COLOUR='\033[1;33m';;
+  esac  
+
+  # shellcheck disable=SC2034
+  ARG1=${3:-}
 
   # shellcheck disable=SC2086
-  echo -e ${ARG1} "${YELLOW}${MSG}${NC}"
+  echo -e ${ARG1} "${COLOUR}${MSG}${NC}"
+}
+
+exitPrompt() {
+case "$EXIT_PROMPT" in
+   "Y"|"y" ) echoMsg "Press any key to close this script $SUDO_USER.\n===============\n" "YELLOW" -n
+             read -n 1 -s -r -p "";;
+   "N"|"n" ) echoMsg "===============\n";;
+esac
 }
 
 # Check for root
 ################
 if [[ "$EUID" -ne 0 ]]; then 
    echoMsg "==========================\napt-update-plus-cleanup.sh: Please run as root\n=========================="
+   exitPrompt
    exit
 fi
 
@@ -73,6 +92,7 @@ if [[ -n "${1-N}" ]]; then
       echo ""
    else
       echoMsg "========\n<param1>: '$DIST_UPGRADE' is not in the expacted format [Y|N] cannot coniinue\n========"
+      exitPrompt
       exit
    fi 
 fi
@@ -83,11 +103,22 @@ if [[ -n "${2-Y}" ]]; then
       echo ""
    else
       echoMsg "========\n<param1>: '$EXIT_PROMPT' is not in the expacted format [Y|N] cannot coniinue\n========"
+      exitPrompt
       exit
    fi 
 fi
 
 echoMsg "======\nScript: starting...\n======\n"
+
+
+# Checking is apt can be run / is locked
+########################################
+
+#LOCKED=$(lsof /var/lib/dpkg/lock >> /dev/null 2>&1)
+#if [ LOCKED = "Y" ]; then
+#   echoMag "LOCKED: $LOCKED"
+#   exit 1
+#fi
 
 
 # Update apt repos and run update / dist-update
@@ -160,8 +191,4 @@ fi
 echoMsg "\n\n"
 
 echoMsg "===============\nScript complete! $UBUNTU_VERSION is now up to date :)"
-case "$EXIT_PROMPT" in
-     "Y"|"y" ) echoMsg "Press any key to close this script $SUDO_USER.\n===============\n" -n
-               read -n 1 -s -r -p "";;
-     "N"|"n" ) echoMsg "===============\n";;
-esac
+exitPrompt

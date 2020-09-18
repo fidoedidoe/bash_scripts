@@ -37,17 +37,17 @@ FLATPAK=/usr/bin/flatpak
 UBUNTU_VERSION=$(lsb_release -ds)
 DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
+EXIT_PROMPT=""
 
 # function(s)
 #############
 echoMsg() {
 
-  # shellcheck disable=SC2034
-  YELLOW='\033[1;33m'
+  COLOUR_RED="\033[0;31m"
+  COLOUR_GREEN="\033[1;32m"
+  COLOUR_YELLOW="\033[1;33m"
+  COLOUR_NEUTRAL="\033[0m"
 
-  # shellcheck disable=SC2034
-  NC='\033[0m' # No Color
- 
   # shellcheck disable=SC2034
   MSG=${1:-}
 
@@ -55,67 +55,75 @@ echoMsg() {
   COLOUR=${2:-}
 
   case "$COLOUR" in
-     "NOCOLOUR"    ) COLOUR=${NC};;
-       "GREEN"     ) COLOUR='\033[1;32m';;
-         "RED"     ) COLOUR='\033[1;33m';;
-         "YELLOW"|*) COLOUR='\033[1;33m';;
+     "NEUTRAL"     ) COLOUR=$COLOUR_NEUTRAL;;
+       "GREEN"     ) COLOUR=$COLOUR_GREEN;;
+         "RED"     ) COLOUR=$COLOUR_RED;;
+         "YELLOW"|*) COLOUR=$COLOUR_YELLOW;;
   esac  
 
   # shellcheck disable=SC2034
-  ARG1=${3:-}
+  ECHO_ARG1=${3:-}
 
-  # shellcheck disable=SC2086
-  echo -e ${ARG1} "${COLOUR}${MSG}${NC}"
+  # ssss_hellcheck disable=SC2086
+  echo -e ${ECHO_ARG1} "${COLOUR}${MSG}${COLOUR_NEUTRAL}"
 }
 
 exitPrompt() {
 case "$EXIT_PROMPT" in
-   "Y"|"y" ) echoMsg "Press any key to close this script $SUDO_USER.\n===============\n" "YELLOW" -n
+   "Y"|"y" ) echoMsg "===============\nPress any key to close this script $SUDO_USER.\n===============\n" "YELLOW" -n
              read -n 1 -s -r -p "";;
-   "N"|"n" ) echoMsg "===============\n";;
+   "N"|"n" ) echoMsg "";;
 esac
 }
 
-# Check for root
-################
-if [[ "$EUID" -ne 0 ]]; then 
-   echoMsg "==========================\napt-update-plus-cleanup.sh: Please run as root\n=========================="
-   exitPrompt
-   exit
-fi
+#################
+# Start of script
+#################
+
 
 # check command line input arguments
 ####################################
-if [[ -n "${1-N}" ]]; then
-   DIST_UPGRADE="${1-N}"
-   if [[ "$DIST_UPGRADE" =~ ^(N|n|Y|y)$ ]]; then
-      echo ""
-   else
-      echoMsg "========\n<param1>: '$DIST_UPGRADE' is not in the expacted format [Y|N] cannot coniinue\n========"
-      exitPrompt
-      exit
-   fi 
-fi
 
+# input param #2   
 if [[ -n "${2-Y}" ]]; then
    EXIT_PROMPT="${2-Y}"
    if [[ "$EXIT_PROMPT" =~ ^(N|n|Y|y)$ ]]; then
       echo ""
    else
-      echoMsg "========\n<param1>: '$EXIT_PROMPT' is not in the expacted format [Y|N] cannot coniinue\n========"
+      echoMsg "========\n<param2>: '$EXIT_PROMPT' is not in the expacted format [Y|N] cannot coniinue\n========" "RED"
       exitPrompt
       exit
    fi 
 fi
 
+# input param #1
+if [[ -n "${1-N}" ]]; then
+   DIST_UPGRADE="${1-N}"
+   if [[ "$DIST_UPGRADE" =~ ^(N|n|Y|y)$ ]]; then
+      echo ""
+   else
+      echoMsg "========\n<param1>: '$DIST_UPGRADE' is not in the expacted format [Y|N] cannot coniinue\n========" "RED"
+      exitPrompt
+      exit
+   fi 
+fi
+
+# Check for root
+################
+if [[ "$EUID" -ne 0 ]]; then 
+   echoMsg "==========================\napt-update-plus-cleanup.sh: Please run as root\n==========================" "RED"
+   exitPrompt
+   exit
+fi
+
 echoMsg "======\nScript: starting...\n======\n"
 
 
-# Checking is apt can be run / is locked
-########################################
-
+# Checking if apt / synaptics is locked
+#######################################
+# WIP: REVIST. Look at apt source code to determine lock method. 
 #LOCKED=$(lsof /var/lib/dpkg/lock >> /dev/null 2>&1)
-#if [ LOCKED = "Y" ]; then
+#if [ $LOCKED ]; then
 #   echoMag "LOCKED: $LOCKED"
 #   exit 1
 #fi
@@ -190,5 +198,5 @@ else
 fi
 echoMsg "\n\n"
 
-echoMsg "===============\nScript complete! $UBUNTU_VERSION is now up to date :)"
+echoMsg "===============\nScript complete! $UBUNTU_VERSION is now up to date :)\n==============="
 exitPrompt

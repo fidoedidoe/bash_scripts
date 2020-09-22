@@ -37,7 +37,7 @@ FLATPAK=/usr/bin/flatpak
 UBUNTU_VERSION=$(lsb_release -ds)
 DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
-SHELL_SCRIPT_NAME=$(basename $0)
+SHELL_SCRIPT_NAME=$(basename "$0")
 EXIT_PROMPT=""
 
 # function(s)
@@ -65,7 +65,7 @@ echoMsg() {
   # shellcheck disable=SC2034
   ECHO_ARG1=${3:-}
 
-  # ssss_hellcheck disable=SC2086
+  # shellcheck disable=SC2086
   echo -e ${ECHO_ARG1} "${COLOUR}${MSG}${COLOUR_NEUTRAL}"
 }
 
@@ -116,7 +116,7 @@ if [[ "$EUID" -ne 0 ]]; then
    exit
 fi
 
-echoMsg "======\nScript: starting...\n======\n"
+echoMsg "======\nScript: starting...\n======\n" "GREEN"
 
 
 # Checking if apt / synaptics like processes are running
@@ -126,7 +126,9 @@ PROCESS_LIST="apt|dpkg|aptitude|synaptic"
 PROCESS_COUNT="1"
 until [[ "$PROCESS_COUNT" -eq "0" ]]; do
    #the below causes a non zero exit status (reason unknown), adding "|| true" mitigates script failure when using "set -e"
-   PROCESS_COUNT=$( ps aux | grep -i -E "$PROCESS_LIST" | grep -v $SHELL_SCRIPT_NAME | grep -v grep | wc -l || true)
+   # shellcheck disable=SC2009
+   # shellcheck disable=SC2126
+   PROCESS_COUNT=$( ps aux | grep -i -E "$PROCESS_LIST" | grep -v "$SHELL_SCRIPT_NAME" | grep -v grep | wc -l || true)
     if [[ PROCESS_COUNT -ne "0" ]]; then
        #ps aux | grep -i -E "$PROCESS_LIST" | grep -v $SHELL_SCRIPT_NAME | grep -v grep
        echoMsg "Warning. $PROCESS_COUNT running processes need to complete before this script can continue... Waiting" "RED"
@@ -203,5 +205,5 @@ else
 fi
 echoMsg "\n\n"
 
-echoMsg "===============\nScript complete! $UBUNTU_VERSION is now up to date :)\n==============="
+echoMsg "===============\nScript complete! $UBUNTU_VERSION is now up to date :)\n===============" "GREEN"
 exitPrompt

@@ -129,7 +129,7 @@ until [[ "$PROCESS_COUNT" -eq "0" ]]; do
    # shellcheck disable=SC2009
    # shellcheck disable=SC2126
    PROCESS_COUNT=$( ps aux | grep -i -E "$PROCESS_LIST" | grep -v "$SHELL_SCRIPT_NAME" | grep -v grep | wc -l || true)
-    if [[ PROCESS_COUNT -ne "0" ]]; then
+    if [[ "$PROCESS_COUNT" -ne "0" ]]; then
        #ps aux | grep -i -E "$PROCESS_LIST" | grep -v $SHELL_SCRIPT_NAME | grep -v grep
        echoMsg "Warning. $PROCESS_COUNT running processes need to complete before this script can continue... Waiting" "RED"
        sleep 1

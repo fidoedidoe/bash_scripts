@@ -37,11 +37,11 @@ FLATPAK=/usr/bin/flatpak
 UBUNTU_VERSION=$(lsb_release -ds)
 DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
-SHELL_SCRIPT_NAME=$(basename "$0")
 EXIT_PROMPT=""
 
 # function(s)
 #############
+
 echoMsg() {
 
   COLOUR_RED="\033[0;31m"
@@ -77,14 +77,89 @@ case "$EXIT_PROMPT" in
 esac
 }
 
-#################
-# Start of script
-#################
+
+function checkRunningProcesses () {
+SHELL_SCRIPT_NAME=$(basename "$0")
+PROCESS_LIST="apt|dpkg|aptitude|synaptic|gpgv"
+PROCESS_COUNT="1"
+#until [[ "$PROCESS_COUNT" -eq "0" ]]; do
+   #the below causes a non zero exit status (reason unknown), adding "|| true" mitigates script failure when using "set -e"
+   # shellcheck disable=SC2009
+   # shellcheck disable=SC2126
+   PROCESS_COUNT=$( ps aux | grep -i -E "$PROCESS_LIST" | grep -v "$SHELL_SCRIPT_NAME" | grep -v grep | wc -l || true)
+   # shellcheck disable=SC2009
+   if [[ "$PROCESS_COUNT" -ne "0" ]]; then
+      #ps aux | grep -i -E "$PROCESS_LIST" | grep -v $SHELL_SCRIPT_NAME | grep -v grep
+      echoMsg "Warning. $PROCESS_COUNT conflicting processes found" "RED"
+      #ps aux | grep root
+      #sleep 5
+      return 1
+   else
+      return 0 
+   fi
+#done
+}
+
+function updatePackageRepo () {
+ERROR="0"
+echoMsg "===\napt: refreshing $UBUNTU_VERSION repositories...\n==="
+apt-get update || ERROR="1"
+if [[ $ERROR -eq "1" ]]; then
+   #echoMsg "ERROR: $ERROR" "RED"
+   return 1
+else
+   #echoMsg "ERROR: $ERROR"
+   return 0
+fi
+}
+
+function updatePackages () {
+ERROR="0"
+case "$DIST_UPGRADE" in
+     "Y"|"y" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt dist-upgrade'\n==="
+               apt-get dist-upgrade || ERROR="1";;
+     "N"|"n" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt upgrade'\n==="
+               apt-get upgrade || ERROR="1";;
+esac
+if [[ $ERROR -eq "1" ]]; then
+   #echoMsg "ERROR: $ERROR" "RED"
+   return 1
+else
+   #echoMsg "ERROR: $ERROR"
+   return 0
+fi
+}
+
+function packageCleanup () {
+ERROR="0"
+echoMsg "===\napt: removing obsolescence...\n==="
+apt-get autoremove || ERROR="1"
+if [[ $ERROR -eq "1" ]]; then
+   #echoMsg "ERROR: $ERROR" "RED"
+   return 1
+else
+   apt-get autoclean || ERROR="1"
+   if [[ $ERROR -eq "1" ]]; then
+      #echoMsg "ERROR: $ERROR"
+      return 1
+   else
+      return 0
+   fi
+fi
+}
+
+#    #################
+#    # Start of script
+#    #################
+
+
+echoMsg "======\nScript: starting...\n======\n" "GREEN"
 
 # check command line input arguments
 ####################################
 
-# input param #2   
+# input param #2
+# --------------
 if [[ -n "${2-Y}" ]]; then
    EXIT_PROMPT="${2-Y}"
    if [[ "$EXIT_PROMPT" =~ ^(N|n|Y|y)$ ]]; then
@@ -97,6 +172,7 @@ if [[ -n "${2-Y}" ]]; then
 fi
 
 # input param #1
+#---------------
 if [[ -n "${1-N}" ]]; then
    DIST_UPGRADE="${1-N}"
    if [[ "$DIST_UPGRADE" =~ ^(N|n|Y|y)$ ]]; then
@@ -108,6 +184,7 @@ if [[ -n "${1-N}" ]]; then
    fi 
 fi
 
+
 # Check for root
 ################
 if [[ "$EUID" -ne 0 ]]; then 
@@ -116,40 +193,44 @@ if [[ "$EUID" -ne 0 ]]; then
    exit
 fi
 
-echoMsg "======\nScript: starting...\n======\n" "GREEN"
 
+# Update apt repos, get new packages and clean up
+#################################################
 
 # Checking if apt / synaptics like processes are running
-########################################################
-
-PROCESS_LIST="apt|dpkg|aptitude|synaptic"
-PROCESS_COUNT="1"
-until [[ "$PROCESS_COUNT" -eq "0" ]]; do
-   #the below causes a non zero exit status (reason unknown), adding "|| true" mitigates script failure when using "set -e"
-   # shellcheck disable=SC2009
-   # shellcheck disable=SC2126
-   PROCESS_COUNT=$( ps aux | grep -i -E "$PROCESS_LIST" | grep -v "$SHELL_SCRIPT_NAME" | grep -v grep | wc -l || true)
-    if [[ "$PROCESS_COUNT" -ne "0" ]]; then
-       #ps aux | grep -i -E "$PROCESS_LIST" | grep -v $SHELL_SCRIPT_NAME | grep -v grep
-       echoMsg "Warning. $PROCESS_COUNT running processes need to complete before this script can continue... Waiting" "RED"
-       sleep 1
-    fi
+# ------------------------------------------------------
+echoMsg "===\napt: checking it's safe to run updates...\n==="
+until checkRunningProcesses; do
+   echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
+   sleep 5
 done
 
-# Update apt repos and run update / dist-update
-###############################################
+# Update apt repos
+#-----------------
+until updatePackageRepo; do
+   echoMsg "Warning. Another package manager is running." "RED"
+   echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
+   sleep 5
+done
 
-echoMsg "===\napt: refreshing $UBUNTU_VERSION repositories...\n==="
-apt update
-case "$DIST_UPGRADE" in
-     "Y"|"y" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt dist-upgrade'\n==="
-               apt dist-upgrade;;
-     "N"|"n" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt upgrade'\n==="
-               apt upgrade;;
-esac
-echoMsg "===\napt: removing obsolescence...\n==="
-apt autoremove && apt autoclean
+# Update apt packages
+#--------------------
+until updatePackages; do
+   echoMsg "Warning. Another package manager is running." "RED"
+   echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
+   sleep 5
+done
+
+# apt cleanup
+#------------
+until packageCleanup; do
+   echoMsg "Warning. Another package manager is running." "RED"
+   echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
+   sleep 5
+done
+
 echoMsg "===\napt: finished!\n===\n\n"
+
 
 # Check for snapd/snap and update snap apps
 ###########################################

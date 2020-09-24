@@ -2,26 +2,10 @@
 
 # Written by FidoeDidoe, 1st July 2020
 # For updates, refer to: https://github.com/fidoedidoe/bash_scripts/blob/master/apt-update-plus-cleanup.sh
+#
+#
+# For more info execute ./<script> --help
 
-# Usage: 
-# sudo ./apt-update-plus-cleanup.sh <param1> [optional]
-#   param1 (optional): Switch to control whether to run 'apt dist-upgrade' or 'apt upgrade' 
-#                      Possible values [Y|y|N|n]
-#                      Default: N
-#                      Y|y: Instructs script to run "apt dist-upgrade"
-#                      N|n: (or not present): Instructs script to run "apt upgrade" 
-#   param2 (optional): Prompt to exit script when complete which is useful when executed via icon from desktop (rather than terminal) 
-#                      Possible values [Y|y|N|n]
-#                      Default: N
-#                      Y|y: Promots to "press any key to exit"
-#                      N|n: Exits script without prompting 
-
-# Runs: 
-# ----
-#  apt update
-#  apt auto remove/clean
-#  updates snap apps
-#  updates flatpak apps
 
 # instruct bash to:
 # ----------------
@@ -37,10 +21,25 @@ FLATPAK=/usr/bin/flatpak
 UBUNTU_VERSION=$(lsb_release -ds)
 DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
-EXIT_PROMPT=""
+EXIT_PROMPT="N"
 
 # function(s)
 #############
+
+function help_menu() {
+# For updates, refer to: https://github.com/fidoedidoe/bash_scripts/blob/master/apt-update-plus-cleanup.sh
+
+echoMsg "=====\nOVERVIEW: Updates apt repos, checks for: apt; snap; flatpack updates\n" "GREEN"
+echoMsg "USAGE:    $(basename "$0") <options>" "GREEN"
+echoMsg "EXAMPLE:  $(basename "$0") --dist-upgrade --exit-prompt" "GREEN"
+echoMsg "EXAMPLE:  $(basename "$0") -e" "GREEN"
+echoMsg "EXAMPLE:  $(basename "$0")\n" "GREEN"
+echoMsg "OPTIONAL PARAMETERS:" "GREEN"
+echoMsg "  -d | --dist-upgrade: Run 'apt dist-upgrade', when omitted runs 'apt upgrade'" "GREEN"
+echoMsg "  -e | --exit-prompt:  Prompt for key press to exit script.\n                       Useful when executed from desktop icon rather than bash terminal." "GREEN"
+echoMsg "=====\n" "GREEN"
+}
+
 
 echoMsg() {
 
@@ -70,20 +69,20 @@ echoMsg() {
 }
 
 exitPrompt() {
-case "$EXIT_PROMPT" in
-   "Y"|"y" ) echoMsg "===============\nPress any key to close this script $SUDO_USER.\n===============\n" "YELLOW" -n
-             read -n 1 -s -r -p "";;
-   "N"|"n" ) echoMsg "";;
-esac
+
+   case "$EXIT_PROMPT" in
+      "Y" ) echoMsg "===============\nPress any key to close this script $SUDO_USER.\n===============\n" "YELLOW" -n
+            read -n 1 -s -r -p "";;
+      "N" ) echoMsg "";;
+   esac
 }
 
 
 function checkRunningProcesses () {
-SHELL_SCRIPT_NAME=$(basename "$0")
-PROCESS_LIST="apt|dpkg|aptitude|synaptic|gpgv"
-PROCESS_COUNT="1"
-#until [[ "$PROCESS_COUNT" -eq "0" ]]; do
-   #the below causes a non zero exit status (reason unknown), adding "|| true" mitigates script failure when using "set -e"
+
+   SHELL_SCRIPT_NAME=$(basename "$0")
+   PROCESS_LIST="apt|dpkg|aptitude|synaptic|gpgv"
+   PROCESS_COUNT="1"
    # shellcheck disable=SC2009
    # shellcheck disable=SC2126
    PROCESS_COUNT=$( ps aux | grep -i -E "$PROCESS_LIST" | grep -v "$SHELL_SCRIPT_NAME" | grep -v grep | wc -l || true)
@@ -92,98 +91,101 @@ PROCESS_COUNT="1"
       #ps aux | grep -i -E "$PROCESS_LIST" | grep -v $SHELL_SCRIPT_NAME | grep -v grep
       echoMsg "Warning. $PROCESS_COUNT conflicting processes found" "RED"
       #ps aux | grep root
-      #sleep 5
       return 1
    else
       return 0 
    fi
-#done
 }
 
 function updatePackageRepo () {
-ERROR="0"
-echoMsg "===\napt: refreshing $UBUNTU_VERSION repositories...\n==="
-apt-get update || ERROR="1"
-if [[ $ERROR -eq "1" ]]; then
-   #echoMsg "ERROR: $ERROR" "RED"
-   return 1
-else
-   #echoMsg "ERROR: $ERROR"
-   return 0
-fi
+
+   ERROR="0"
+   echoMsg "===\napt: refreshing $UBUNTU_VERSION repositories...\n==="
+   apt-get update || ERROR="1"
+   if [[ $ERROR -eq "1" ]]; then
+      #echoMsg "ERROR: $ERROR" "RED"
+      return 1
+   else
+      #echoMsg "ERROR: $ERROR"
+      return 0
+   fi
 }
 
 function updatePackages () {
-ERROR="0"
-case "$DIST_UPGRADE" in
-     "Y"|"y" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt dist-upgrade'\n==="
-               apt-get dist-upgrade || ERROR="1";;
-     "N"|"n" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt upgrade'\n==="
-               apt-get upgrade || ERROR="1";;
-esac
-if [[ $ERROR -eq "1" ]]; then
-   #echoMsg "ERROR: $ERROR" "RED"
-   return 1
-else
-   #echoMsg "ERROR: $ERROR"
-   return 0
-fi
+
+   ERROR="0"
+   case "$DIST_UPGRADE" in
+        "Y"|"y" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt dist-upgrade'\n==="
+                  apt-get dist-upgrade || ERROR="1";;
+        "N"|"n" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt upgrade'\n==="
+                  apt-get upgrade || ERROR="1";;
+   esac
+   if [[ $ERROR -eq "1" ]]; then
+      #echoMsg "ERROR: $ERROR" "RED"
+      return 1
+   else
+      #echoMsg "ERROR: $ERROR"
+      return 0
+   fi
 }
 
 function packageCleanup () {
-ERROR="0"
-echoMsg "===\napt: removing obsolescence...\n==="
-apt-get autoremove || ERROR="1"
-if [[ $ERROR -eq "1" ]]; then
-   #echoMsg "ERROR: $ERROR" "RED"
-   return 1
-else
-   apt-get autoclean || ERROR="1"
+
+   ERROR="0"
+   echoMsg "===\napt: removing obsolescence...\n==="
+   apt-get autoremove || ERROR="1"
    if [[ $ERROR -eq "1" ]]; then
-      #echoMsg "ERROR: $ERROR"
-      return 1
+    #echoMsg "ERROR: $ERROR" "RED"
+    return 1
    else
-      return 0
+      apt-get autoclean || ERROR="1"
+      if [[ $ERROR -eq "1" ]]; then
+         #echoMsg "ERROR: $ERROR"
+         return 1
+      else
+         return 0
+      fi
    fi
-fi
 }
 
-#    #################
-#    # Start of script
-#    #################
+function parse_parameters() {
+   while [[ ${#} -ge 1 ]]; do
+       case "${1}" in
+           # OPTIONAL FLAGS
+           "-d"|"--dist-upgrade") DIST_UPGRADE="Y";;
+           "-e"|"--exit-prompt" ) EXIT_PROMPT="Y" ;;
 
+           # HELP!
+           "-h"|"--help") help_menu; exitPrompt; exit ;;
+       esac
+       shift
+    done
+}
 
-echoMsg "======\nScript: starting...\n======\n" "GREEN"
+function start_msg() {
 
-# check command line input arguments
-####################################
+   echoMsg "======\nScript: starting...\n======\n\n" "GREEN"
+   echoMsg "======\nPassed Parameters/operation:" "GREEN"
+   case "$EXIT_PROMPT" in
+      "Y" ) echoMsg " -e | --exit-prompt:  Script will prompt for key press to exit" "GREEN";;
+      "N" ) echoMsg " -e | --exit-prompt:  NOT specified, defaulting to exit on completion" "GREEN";;
+   esac
+   case "$DIST_UPGRADE" in
+      "Y" ) echoMsg " -d | --dist-upgrade: Script will run 'apt-get dist-upgrade" "GREEN";;
+      "N" ) echoMsg " -d | --dist-upgrade: NOT specified, defaulting to run 'apt-get upgrade'" "GREEN";;
+   esac
+   echoMsg "======\n" "GREEN"
 
-# input param #2
-# --------------
-if [[ -n "${2-Y}" ]]; then
-   EXIT_PROMPT="${2-Y}"
-   if [[ "$EXIT_PROMPT" =~ ^(N|n|Y|y)$ ]]; then
-      echo ""
-   else
-      echoMsg "========\n<param2>: '$EXIT_PROMPT' is not in the expacted format [Y|N] cannot coniinue\n========" "RED"
-      exitPrompt
-      exit
-   fi 
-fi
+}
 
-# input param #1
-#---------------
-if [[ -n "${1-N}" ]]; then
-   DIST_UPGRADE="${1-N}"
-   if [[ "$DIST_UPGRADE" =~ ^(N|n|Y|y)$ ]]; then
-      echo ""
-   else
-      echoMsg "========\n<param1>: '$DIST_UPGRADE' is not in the expacted format [Y|N] cannot coniinue\n========" "RED"
-      exitPrompt
-      exit
-   fi 
-fi
+#-----------------
+##################
+# Start of script
+##################
+#-----------------
 
+parse_parameters "${@}"
+start_msg
 
 # Check for root
 ################

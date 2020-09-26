@@ -261,6 +261,7 @@ if [[ "$PID1_PROC" == "systemd" ]]; then
       # snaps are updated on a schedule (4 times per day). Due to this, 
       # we may find "disabled" snaps (older revisions) that have been updated outside of this script/conditional code block above.  
       # To mitigate having too many old revisions hanging around "always check for and remove outdated revisions" (rather than having within the above conditional code block). 
+      echoMsg "==========\nsnap store: removing obsolescence...\n=========="
       LANG=en_US.UTF-8 snap list --all --color auto | awk '/disabled/{print $1, $3}' |
          while read -r snapname revision; do
             echoMsg "removing $snapname: rev - $revision....." -n && snap remove "$snapname" --revision="$revision"

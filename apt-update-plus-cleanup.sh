@@ -22,6 +22,7 @@ UBUNTU_VERSION=$(lsb_release -ds)
 DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
 EXIT_PROMPT="N"
+CLEAN_UP="N"
 
 # function(s)
 #############
@@ -37,6 +38,7 @@ echoMsg "EXAMPLE:  $(basename "$0")\n" "GREEN"
 echoMsg "OPTIONAL PARAMETERS:" "GREEN"
 echoMsg "  -d | --dist-upgrade: Run 'apt dist-upgrade', when omitted runs 'apt upgrade'" "GREEN"
 echoMsg "  -e | --exit-prompt:  Prompt for key press to exit script.\n                       Useful when executed from desktop icon rather than bash terminal." "GREEN"
+echoMsg "  -a | --apt-clean:    Run apt auto-clean + auto-remove after installing apt updates.\n                       NOTE obsolete packages are always removed *before* running apt update" "GREEN"
 echoMsg "=====\n" "GREEN"
 }
 
@@ -131,21 +133,25 @@ function updatePackages () {
 
 function packageCleanup () {
 
-   ERROR="0"
-   echoMsg "===\napt: removing obsolescence...\n==="
-   apt-get autoremove || ERROR="1"
-   if [[ $ERROR -eq "1" ]]; then
-    #echoMsg "ERROR: $ERROR" "RED"
-    return 1
-   else
-      apt-get autoclean || ERROR="1"
+   #if [[ $CLEAN_UP = "Y" ]]; then
+      ERROR="0"
+      echoMsg "===\napt: removing obsolescence...\n==="
+      apt-get autoremove || ERROR="1"
       if [[ $ERROR -eq "1" ]]; then
-         #echoMsg "ERROR: $ERROR"
+         #echoMsg "ERROR: $ERROR" "RED"
          return 1
       else
-         return 0
+         apt-get autoclean || ERROR="1"
+         if [[ $ERROR -eq "1" ]]; then
+            #echoMsg "ERROR: $ERROR"
+            return 1
+         else
+            return 0
+         fi
       fi
-   fi
+  #else
+  #   return 0
+  #fi	  
 }
 
 function parse_parameters() {
@@ -154,6 +160,7 @@ function parse_parameters() {
            # OPTIONAL FLAGS
            "-d"|"--dist-upgrade") DIST_UPGRADE="Y";;
            "-e"|"--exit-prompt" ) EXIT_PROMPT="Y" ;;
+           "-a"|"--apt-cleanup" ) CLEAN_UP="Y" ;;
 
            # HELP!
            "-h"|"--help") help_menu; exitPrompt; exit ;;
@@ -173,6 +180,10 @@ function start_msg() {
    case "$DIST_UPGRADE" in
       "Y" ) echoMsg " -d | --dist-upgrade: Script will run 'apt-get dist-upgrade" "GREEN";;
       "N" ) echoMsg " -d | --dist-upgrade: NOT specified, defaulting to run 'apt-get upgrade'" "GREEN";;
+   esac
+   case "$CLEAN_UP" in
+      "Y" ) echoMsg " -a | --apt-clean: Script will run 'apt-get autoremove & autoclean' after installing new packages" "GREEN";;
+      "N" ) echoMsg " -a | --apt-clean: NOT specified, obsolete packages will remain after install" "GREEN";;
    esac
    echoMsg "======\n" "GREEN"
 
@@ -207,6 +218,14 @@ until checkRunningProcesses; do
    sleep 5
 done
 
+# apt cleanup
+#------------
+until packageCleanup; do
+   echoMsg "Warning. Another package manager is running." "RED"
+   echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
+   sleep 5
+done
+
 # Update apt repos
 #-----------------
 until updatePackageRepo; do
@@ -225,11 +244,14 @@ done
 
 # apt cleanup
 #------------
-until packageCleanup; do
-   echoMsg "Warning. Another package manager is running." "RED"
-   echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
-   sleep 5
-done
+
+if [[ $CLEAN_UP = "Y" ]]; then
+   until packageCleanup; do
+      echoMsg "Warning. Another package manager is running." "RED"
+      echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
+      sleep 5
+   done
+fi 
 
 echoMsg "===\napt: finished!\n===\n\n"
 

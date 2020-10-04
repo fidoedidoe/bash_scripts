@@ -13,5 +13,4 @@ EXAMPLE:  apt-update-plus-cleanup.sh
 OPTIONAL PARAMETERS:
   -d | --dist-upgrade: Run 'apt dist-upgrade', when omitted runs 'apt upgrade'
   -e | --exit-prompt:  Prompt for key press to exit script.
-                       Useful when executed from desktop icon rather than bash terminal.
-
+         Useful when executed from desktop icon rather than bash terminal.

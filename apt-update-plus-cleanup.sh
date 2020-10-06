@@ -22,7 +22,7 @@ UBUNTU_VERSION=$(lsb_release -ds)
 DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
 EXIT_PROMPT="N"
-CLEAN_UP="N"
+APT_CLEAN="N"
 
 # function(s)
 #############
@@ -133,7 +133,7 @@ function updatePackages () {
 
 function packageCleanup () {
 
-   #if [[ $CLEAN_UP = "Y" ]]; then
+   #if [[ $APT_CLEAN = "Y" ]]; then
       ERROR="0"
       echoMsg "===\napt: removing obsolescence...\n==="
       apt-get autoremove || ERROR="1"
@@ -160,7 +160,7 @@ function parse_parameters() {
            # OPTIONAL FLAGS
            "-d"|"--dist-upgrade") DIST_UPGRADE="Y";;
            "-e"|"--exit-prompt" ) EXIT_PROMPT="Y" ;;
-           "-a"|"--apt-cleanup" ) CLEAN_UP="Y" ;;
+           "-a"|"--apt-clean" ) APT_CLEAN="Y" ;;
 
            # HELP!
            "-h"|"--help") help_menu; exitPrompt; exit ;;
@@ -181,7 +181,7 @@ function start_msg() {
       "Y" ) echoMsg " -d | --dist-upgrade: Script will run 'apt-get dist-upgrade" "GREEN";;
       "N" ) echoMsg " -d | --dist-upgrade: NOT specified, defaulting to run 'apt-get upgrade'" "GREEN";;
    esac
-   case "$CLEAN_UP" in
+   case "$APT_CLEAN" in
       "Y" ) echoMsg " -a | --apt-clean: Script will run 'apt-get autoremove & autoclean' after installing new packages" "GREEN";;
       "N" ) echoMsg " -a | --apt-clean: NOT specified, obsolete packages will remain after install" "GREEN";;
    esac
@@ -245,7 +245,7 @@ done
 # apt cleanup
 #------------
 
-if [[ $CLEAN_UP = "Y" ]]; then
+if [[ $APT_CLEAN = "Y" ]]; then
    until packageCleanup; do
       echoMsg "Warning. Another package manager is running." "RED"
       echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."

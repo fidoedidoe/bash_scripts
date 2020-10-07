@@ -23,6 +23,7 @@ DIST_UPGRADE="N"
 PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is running
 EXIT_PROMPT="N"
 APT_CLEAN="N"
+NO_PROMPT=""
 
 # function(s)
 #############
@@ -39,6 +40,7 @@ echoMsg "OPTIONAL PARAMETERS:" "GREEN"
 echoMsg "  -d | --dist-upgrade: Run 'apt dist-upgrade', when omitted runs 'apt upgrade'" "GREEN"
 echoMsg "  -e | --exit-prompt:  Prompt for key press to exit script.\n                       Useful when executed from desktop icon rather than bash terminal." "GREEN"
 echoMsg "  -a | --apt-clean:    Run apt auto-clean + auto-remove after installing apt updates.\n                       NOTE obsolete packages are always removed *before* running apt update" "GREEN"
+echoMsg "  -n | --no-prompt: Do not prompt user" "GREEN"
 echoMsg "=====\n" "GREEN"
 }
 
@@ -118,9 +120,9 @@ function updatePackages () {
    ERROR="0"
    case "$DIST_UPGRADE" in
         "Y"|"y" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt dist-upgrade'\n==="
-                  apt-get dist-upgrade || ERROR="1";;
+                  apt-get dist-upgrade "$NO_PROMPT" || ERROR="1";;
         "N"|"n" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt upgrade'\n==="
-                  apt-get upgrade || ERROR="1";;
+                  apt-get upgrade "$NO_PROMPT" || ERROR="1";;
    esac
    if [[ $ERROR -eq "1" ]]; then
       #echoMsg "ERROR: $ERROR" "RED"
@@ -161,6 +163,7 @@ function parse_parameters() {
            "-d"|"--dist-upgrade") DIST_UPGRADE="Y";;
            "-e"|"--exit-prompt" ) EXIT_PROMPT="Y" ;;
            "-a"|"--apt-clean" ) APT_CLEAN="Y" ;;
+           "-n"|"--no-prompt" ) NO_PROMPT="--assume-yes" ;;
 
            # HELP!
            "-h"|"--help") help_menu; exitPrompt; exit ;;

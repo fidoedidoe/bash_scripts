@@ -105,7 +105,7 @@ function updatePackageRepo () {
 
    ERROR="0"
    echoMsg "===\napt: refreshing $UBUNTU_VERSION repositories...\n==="
-   apt-get update || ERROR="1"
+   apt-get update "$NO_PROMPT" || ERROR="1"
    if [[ $ERROR -eq "1" ]]; then
       #echoMsg "ERROR: $ERROR" "RED"
       return 1
@@ -138,12 +138,12 @@ function packageCleanup () {
    #if [[ $APT_CLEAN = "Y" ]]; then
       ERROR="0"
       echoMsg "===\napt: removing obsolescence...\n==="
-      apt-get autoremove || ERROR="1"
+      apt-get autoremove "$NO_PROMPT" || ERROR="1"
       if [[ $ERROR -eq "1" ]]; then
          #echoMsg "ERROR: $ERROR" "RED"
          return 1
       else
-         apt-get autoclean || ERROR="1"
+         apt-get autoclean "$NO_PROMPT" || ERROR="1"
          if [[ $ERROR -eq "1" ]]; then
             #echoMsg "ERROR: $ERROR"
             return 1
@@ -270,7 +270,7 @@ if [[ "$PID1_PROC" == "systemd" ]]; then
       SNAP_LIST=$(LANG=en_US.UTF-8 snap refresh --list 2>&1)
       echo "${SNAP_LIST}"
       if [[ $SNAP_LIST != "All snaps up to date." ]]; then
-         if [[ = "" ]]; then
+         if [[ $NO_PROMPT = "" ]]; then
             echoMsg "==========\nsnap store: Update snap apps? [Y/n]...\n==========\n"
             PROMPT=""
             read -r -p "" -e -n 1 PROMPT

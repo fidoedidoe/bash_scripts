@@ -270,18 +270,22 @@ if [[ "$PID1_PROC" == "systemd" ]]; then
       SNAP_LIST=$(LANG=en_US.UTF-8 snap refresh --list 2>&1)
       echo "${SNAP_LIST}"
       if [[ $SNAP_LIST != "All snaps up to date." ]]; then
-         echoMsg "==========\nsnap store: Update snap apps? [Y/n]...\n==========\n"
-         PROMPT=""
-         read -r -p "" -e -n 1 PROMPT
-         if [ -z "$PROMPT" ]; then
-             PROMPT="Y"
-         fi
-         if [[ $PROMPT =~ ^[Yy]$ ]]; then
-            echoMsg "==========\nsnap store: updatings snaps...\n=========="
-            snap refresh
+         if [[ = "" ]]; then
+            echoMsg "==========\nsnap store: Update snap apps? [Y/n]...\n==========\n"
+            PROMPT=""
+            read -r -p "" -e -n 1 PROMPT
+            if [ -z "$PROMPT" ]; then
+                PROMPT="Y"
+            fi
+            if [[ $PROMPT =~ ^[Yy]$ ]]; then
+               echoMsg "==========\nsnap store: updatings snaps...\n=========="
+               snap refresh
+            else
+               echoMsg "==========\nsnap store: $SUDO_USER, you entered '$PROMPT', skipping check for snap updates ...\n==========\n\n"
+            fi
          else
-            echoMsg "==========\nsnap store: $SUDO_USER, you entered '$PROMPT', skipping check for snap updates ...\n==========\n\n"
-         fi
+            snap refresh
+         fi 
       fi
       # snaps are updated on a schedule (4 times per day). Due to this, 
       # we may find "disabled" snaps (older revisions) that have been updated outside of this script/conditional code block above.  

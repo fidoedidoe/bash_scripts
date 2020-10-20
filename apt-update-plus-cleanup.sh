@@ -24,6 +24,7 @@ PID1_PROC=$(ps --no-headers -o comm 1) #Checks whether systemd or init is runnin
 EXIT_PROMPT="N"
 APT_CLEAN="N"
 NO_PROMPT=""
+SKIP_PROCESS_CHECK="N"
 
 # function(s)
 #############
@@ -35,12 +36,14 @@ echoMsg "=====\nOVERVIEW: Updates apt repos, checks for: apt; snap; flatpack upd
 echoMsg "USAGE:    $(basename "$0") <options>" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") --dist-upgrade --exit-prompt" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") -e" "GREEN"
+echoMsg "EXAMPLE:  $(basename "$0") --skip-process-check" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0")\n" "GREEN"
 echoMsg "OPTIONAL PARAMETERS:" "GREEN"
 echoMsg "  -d | --dist-upgrade: Run 'apt dist-upgrade', when omitted runs 'apt upgrade'" "GREEN"
 echoMsg "  -e | --exit-prompt:  Prompt for key press to exit script.\n                       Useful when executed from desktop icon rather than bash terminal." "GREEN"
 echoMsg "  -a | --apt-clean:    Run apt auto-clean + auto-remove after installing apt updates.\n                       NOTE obsolete packages are always removed *before* running apt update" "GREEN"
 echoMsg "  -n | --no-prompt: Do not prompt user" "GREEN"
+echoMsg "  -s | --skip-process-check: Skip initial running process check" "GREEN"
 echoMsg "=====\n" "GREEN"
 }
 
@@ -105,7 +108,7 @@ function updatePackageRepo () {
 
    ERROR="0"
    echoMsg "===\napt: refreshing $UBUNTU_VERSION repositories...\n==="
-   apt-get update "$NO_PROMPT" || ERROR="1"
+   apt-get $NO_PROMPT update || ERROR="1"
    if [[ $ERROR -eq "1" ]]; then
       #echoMsg "ERROR: $ERROR" "RED"
       return 1
@@ -120,9 +123,11 @@ function updatePackages () {
    ERROR="0"
    case "$DIST_UPGRADE" in
         "Y"|"y" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt dist-upgrade'\n==="
-                  apt-get dist-upgrade "$NO_PROMPT" || ERROR="1";;
+                  #apt-get $NO_PROMPT dist-upgrade  || ERROR="1";;
+                  apt-get $NO_PROMPT -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade || ERROR="1";;
         "N"|"n" ) echoMsg "===\napt: checking for updates in refreshed repositories using: 'apt upgrade'\n==="
-                  apt-get upgrade "$NO_PROMPT" || ERROR="1";;
+                  #apt-get $NO_PROMPT upgrade || ERROR="1";;
+                  apt-get $NO_PROMPT -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade || ERROR="1";;
    esac
    if [[ $ERROR -eq "1" ]]; then
       #echoMsg "ERROR: $ERROR" "RED"
@@ -138,12 +143,12 @@ function packageCleanup () {
    #if [[ $APT_CLEAN = "Y" ]]; then
       ERROR="0"
       echoMsg "===\napt: removing obsolescence...\n==="
-      apt-get autoremove "$NO_PROMPT" || ERROR="1"
+      apt-get $NO_PROMPT autoremove || ERROR="1"
       if [[ $ERROR -eq "1" ]]; then
          #echoMsg "ERROR: $ERROR" "RED"
          return 1
       else
-         apt-get autoclean "$NO_PROMPT" || ERROR="1"
+         apt-get $NO_PROMPT autoclean || ERROR="1"
          if [[ $ERROR -eq "1" ]]; then
             #echoMsg "ERROR: $ERROR"
             return 1
@@ -164,6 +169,7 @@ function parse_parameters() {
            "-e"|"--exit-prompt" ) EXIT_PROMPT="Y" ;;
            "-a"|"--apt-clean" ) APT_CLEAN="Y" ;;
            "-n"|"--no-prompt" ) NO_PROMPT="--assume-yes" ;;
+           "-s"|"--skip-process-check" ) SKIP_PROCESS_CHECK="Y" ;;
 
            # HELP!
            "-h"|"--help") help_menu; exitPrompt; exit ;;
@@ -215,11 +221,13 @@ fi
 
 # Checking if apt / synaptics like processes are running
 # ------------------------------------------------------
-echoMsg "===\napt: checking it's safe to run updates...\n==="
-until checkRunningProcesses; do
-   echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
-   sleep 5
-done
+if [[ SKIP_PROCESS_CHECK != "Y" ]]; then
+  echoMsg "===\napt: checking it's safe to run updates...\n==="
+  until checkRunningProcesses; do
+     echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."
+     sleep 5
+  done
+fi  
 
 # apt cleanup
 #------------

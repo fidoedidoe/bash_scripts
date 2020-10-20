@@ -221,7 +221,7 @@ fi
 
 # Checking if apt / synaptics like processes are running
 # ------------------------------------------------------
-if [[ SKIP_PROCESS_CHECK != "Y" ]]; then
+if [[ $SKIP_PROCESS_CHECK != "Y" ]]; then
   echoMsg "===\napt: checking it's safe to run updates...\n==="
   until checkRunningProcesses; do
      echoMsg "Retrying in 5 seconds (<CTRL> + C to terminate)...."

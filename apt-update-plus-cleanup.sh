@@ -29,26 +29,72 @@ SKIP_PROCESS_CHECK="N"
 # function(s)
 #############
 
-function help_menu() {
-# For updates, refer to: https://github.com/fidoedidoe/bash_scripts/blob/master/apt-update-plus-cleanup.sh
+function parse_parameters() {
 
+   while [[ ${#} -ge 1 ]]; do
+       case "${1}" in
+           # OPTIONAL FLAGS
+           "-d"|"--dist-upgrade") DIST_UPGRADE="Y";;
+           "-e"|"--exit-prompt" ) EXIT_PROMPT="Y" ;;
+           "-a"|"--apt-clean" ) APT_CLEAN="Y" ;;
+           "-n"|"--no-prompt" ) NO_PROMPT="--assume-yes" ;;
+           "-s"|"--skip-process-check" ) SKIP_PROCESS_CHECK="Y" ;;
+
+           # HELP!
+           "-h"|"--help") help_menu; exitPrompt; exit ;;
+       esac
+       shift
+    done
+}
+
+function help_menu() {
+
+# For updates, refer to: https://github.com/fidoedidoe/bash_scripts/blob/master/apt-update-plus-cleanup.sh
 echoMsg "=====\nOVERVIEW: Updates apt repos, checks for: apt; snap; flatpack updates\n" "GREEN"
 echoMsg "USAGE:    $(basename "$0") <options>" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") --dist-upgrade --exit-prompt" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") -e" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") --skip-process-check" "GREEN"
+echoMsg "EXAMPLE:  $(basename "$0") --help" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0")\n" "GREEN"
 echoMsg "OPTIONAL PARAMETERS:" "GREEN"
 echoMsg "  -d | --dist-upgrade:       Run 'apt dist-upgrade', when omitted runs 'apt upgrade'" "GREEN"
 echoMsg "  -e | --exit-prompt:        Prompt for key press to exit script.\n                             NOTE: Useful when executed from desktop icon rather than bash terminal." "GREEN"
 echoMsg "  -a | --apt-clean:          Run apt auto-clean + auto-remove after installing apt updates.\n                             NOTE: obsolete packages are always removed *before* running apt update" "GREEN"
-echoMsg "  -n | --no-prompt:          Do not prompt user" "GREEN"
+echoMsg "  -n | --no-prompt:          Do not prompt user (no need for interactive shell)" "GREEN"
 echoMsg "  -s | --skip-process-check: Skip initial running process check" "GREEN"
+echoMsg "  -s | --help:               Show Help" "GREEN"
 echoMsg "=====\n" "GREEN"
 }
 
+function start_msg() {
 
-echoMsg() {
+   echoMsg "======\nScript: starting...\n======\n\n" "GREEN"
+   echoMsg "======\nPassed Parameters/operation:" "GREEN"
+   case "$DIST_UPGRADE" in
+      "Y" ) echoMsg " -d | --dist-upgrade: Script will run 'apt-get dist-upgrade" "GREEN";;
+      "N" ) echoMsg " -d | --dist-upgrade: NOT specified, defaulting to run 'apt-get upgrade'" "GREEN";;
+   esac
+   case "$EXIT_PROMPT" in
+      "Y" ) echoMsg " -e | --exit-prompt:  Script will prompt for key press to exit" "GREEN";;
+      "N" ) echoMsg " -e | --exit-prompt:  NOT specified, defaulting to exit on completion" "GREEN";;
+   esac
+   case "$APT_CLEAN" in
+      "Y" ) echoMsg " -a | --apt-clean: Script will run 'apt-get autoremove & autoclean' after installing new packages" "GREEN";;
+      "N" ) echoMsg " -a | --apt-clean: NOT specified, obsolete packages will remain after install" "GREEN";;
+   esac
+   case "$NO_PROMPT" in
+      "--assume-yes" ) echoMsg " -n | --no-prompt: Script will run 'apt-get $NO_PROMPT' to mitigate need for interactive shell" "GREEN";;
+                   * ) echoMsg " -n | --no-prompt: NOT specified, if needed user input required via shell" "GREEN";;
+   esac
+   case "$SKIP_PROCESS_CHECK" in
+      "Y" ) echoMsg " -s | --skip-process-check: Skip initial 'running process' check" "GREEN";;
+      "N" ) echoMsg " -s | --skip-process-check: NOT specified, intial 'running process' check will be invoked" "GREEN";;
+   esac
+   echoMsg "======\n" "GREEN"
+}
+
+function echoMsg() {
 
   COLOUR_RED="\033[0;31m"
   COLOUR_GREEN="\033[1;32m"
@@ -75,7 +121,7 @@ echoMsg() {
   echo -e ${ECHO_ARG1} "${COLOUR}${MSG}${COLOUR_NEUTRAL}"
 }
 
-exitPrompt() {
+function exitPrompt() {
 
    case "$EXIT_PROMPT" in
       "Y" ) echoMsg "===============\nPress any key to close this script $SUDO_USER.\n===============\n" "YELLOW" -n
@@ -159,43 +205,6 @@ function packageCleanup () {
   #else
   #   return 0
   #fi	  
-}
-
-function parse_parameters() {
-   while [[ ${#} -ge 1 ]]; do
-       case "${1}" in
-           # OPTIONAL FLAGS
-           "-d"|"--dist-upgrade") DIST_UPGRADE="Y";;
-           "-e"|"--exit-prompt" ) EXIT_PROMPT="Y" ;;
-           "-a"|"--apt-clean" ) APT_CLEAN="Y" ;;
-           "-n"|"--no-prompt" ) NO_PROMPT="--assume-yes" ;;
-           "-s"|"--skip-process-check" ) SKIP_PROCESS_CHECK="Y" ;;
-
-           # HELP!
-           "-h"|"--help") help_menu; exitPrompt; exit ;;
-       esac
-       shift
-    done
-}
-
-function start_msg() {
-
-   echoMsg "======\nScript: starting...\n======\n\n" "GREEN"
-   echoMsg "======\nPassed Parameters/operation:" "GREEN"
-   case "$EXIT_PROMPT" in
-      "Y" ) echoMsg " -e | --exit-prompt:  Script will prompt for key press to exit" "GREEN";;
-      "N" ) echoMsg " -e | --exit-prompt:  NOT specified, defaulting to exit on completion" "GREEN";;
-   esac
-   case "$DIST_UPGRADE" in
-      "Y" ) echoMsg " -d | --dist-upgrade: Script will run 'apt-get dist-upgrade" "GREEN";;
-      "N" ) echoMsg " -d | --dist-upgrade: NOT specified, defaulting to run 'apt-get upgrade'" "GREEN";;
-   esac
-   case "$APT_CLEAN" in
-      "Y" ) echoMsg " -a | --apt-clean: Script will run 'apt-get autoremove & autoclean' after installing new packages" "GREEN";;
-      "N" ) echoMsg " -a | --apt-clean: NOT specified, obsolete packages will remain after install" "GREEN";;
-   esac
-   echoMsg "======\n" "GREEN"
-
 }
 
 #-----------------

@@ -25,6 +25,8 @@ EXIT_PROMPT="N"
 APT_CLEAN="N"
 NO_PROMPT=""
 SKIP_PROCESS_CHECK="N"
+PROCESS_LIST="apt|dpkg|aptitude|synaptic|gpgv"
+PROCESS_LIST_OVERRIDE="N"
 
 # function(s)
 #############
@@ -39,6 +41,7 @@ function parse_parameters() {
            "-a"|"--apt-clean" ) APT_CLEAN="Y" ;;
            "-n"|"--no-prompt" ) NO_PROMPT="--assume-yes" ;;
            "-s"|"--skip-process-check" ) SKIP_PROCESS_CHECK="Y" ;;
+           "-p"|"--process-list-override" ) shift && PROCESS_LIST=${1} && PROCESS_LIST_OVERRIDE="Y";;
 
            # HELP!
            "-h"|"--help") help_menu; exitPrompt; exit ;;
@@ -53,6 +56,7 @@ function help_menu() {
 echoMsg "=====\nOVERVIEW: Updates apt repos, checks for: apt; snap; flatpack updates\n" "GREEN"
 echoMsg "USAGE:    $(basename "$0") <options>" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") --dist-upgrade --exit-prompt" "GREEN"
+echoMsg "EXAMPLE:  $(basename "$0") --dist-upgrade --exit-prompt --process-list-override 'apt|dpkg|aptitude|synaptic|gpgv' " "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") -e" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") --skip-process-check" "GREEN"
 echoMsg "EXAMPLE:  $(basename "$0") --help" "GREEN"
@@ -63,7 +67,8 @@ echoMsg "  -e | --exit-prompt:        Prompt for key press to exit script.\n    
 echoMsg "  -a | --apt-clean:          Run apt auto-clean + auto-remove after installing apt updates.\n                             NOTE: obsolete packages are always removed *before* running apt update" "GREEN"
 echoMsg "  -n | --no-prompt:          Do not prompt user (no need for interactive shell)" "GREEN"
 echoMsg "  -s | --skip-process-check: Skip initial running process check" "GREEN"
-echoMsg "  -s | --help:               Show Help" "GREEN"
+echoMsg "  -p | --process-list: Overide processes list check against before proceeding with script    NOTE: ie --process-list 'apt|dpkg|aptitude|synaptic|gpgv' " "GREEN"
+echoMsg "  -h | --help:               Show Help" "GREEN"
 echoMsg "=====\n" "GREEN"
 }
 
@@ -90,6 +95,10 @@ function start_msg() {
    case "$SKIP_PROCESS_CHECK" in
       "Y" ) echoMsg " -s | --skip-process-check: Skip initial 'running process' check" "GREEN";;
       "N" ) echoMsg " -s | --skip-process-check: NOT specified, intial 'running process' check will be invoked" "GREEN";;
+   esac
+   case "$PROCESS_LIST_OVERRIDE" in
+      "Y" ) echoMsg " -p | --process-list-override: supplied, 'running process' check against: $PROCESS_LIST" "GREEN";;
+      "N" ) echoMsg " -p | --process-list-override: NOT specified, 'running process' check against: $PROCESS_LIST" "GREEN";;
    esac
    echoMsg "======\n" "GREEN"
 }
@@ -134,16 +143,15 @@ function exitPrompt() {
 function checkRunningProcesses () {
 
    SHELL_SCRIPT_NAME=$(basename "$0")
-   PROCESS_LIST="apt|dpkg|aptitude|synaptic|gpgv"
    PROCESS_COUNT="1"
    # shellcheck disable=SC2009
    # shellcheck disable=SC2126
-   PROCESS_COUNT=$( ps aux | grep -i -E "$PROCESS_LIST" | grep -v "$SHELL_SCRIPT_NAME" | grep -v grep | wc -l || true)
+   PROCESS_COUNT=$( ps aux | awk '{print $2, $11}' | grep -i -E "$PROCESS_LIST" | grep -v "$SHELL_SCRIPT_NAME" | grep -v grep | wc -l || true)
    # shellcheck disable=SC2009
    if [[ "$PROCESS_COUNT" -ne "0" ]]; then
-      #ps aux | grep -i -E "$PROCESS_LIST" | grep -v $SHELL_SCRIPT_NAME | grep -v grep
+      PROCESSES=$( ps aux | awk '{print $2, $11}' | grep -i -E "$PROCESS_LIST" | grep -v "$SHELL_SCRIPT_NAME" | grep -v grep | uniq | sort | tr '\n' ';' || true)
       echoMsg "Warning. $PROCESS_COUNT conflicting processes found" "RED"
-      #ps aux | grep root
+      echoMsg "$PROCESSES" "RED"
       return 1
    else
       return 0 

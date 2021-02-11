@@ -7,7 +7,7 @@
 #  -o pipefail "prevent errors in pipeline from being masked"
 set -euo pipefail
 
-# Check for root
+# Check for root user
 if [ "$EUID" -ne 0 ]
   then echo "dkms-rebuild-modules.sh: Please run as root"
   exit

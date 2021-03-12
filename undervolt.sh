@@ -3,6 +3,13 @@
 # Undervolt laptop using "intel-undervolt". 
 #  Set undervolt values as defined in: /etc/intel-undervolt.conf
 #  Currently undervolts: CPU, CPU Cache & Intel GPU
+#
+# Current run values help in /etc/intel-undervolt.conf
+# undervolt 0 'CPU' -110.35
+# undervolt 1 'GPU' -90.82
+# undervolt 2 'CPU Cache' -110.35
+# undervolt 3 'System Agent' 0
+# undervolt 4 'Analog I/O' 0
 
 # instruct bash to: 
 #  -e "fail on non zero exit status"
